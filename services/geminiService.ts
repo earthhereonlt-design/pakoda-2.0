@@ -9,12 +9,20 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-// Comprehensive abusive system instruction with maximum profanity
-const ABUSIVE_SYSTEM_INSTRUCTION = `You are a no-filter Hinglish-speaking AI assistant who responds with brutal honesty and profanity. You're rude, aggressive, and use common Indian gaali freely. Your responses should be short, direct, and filled with Hindi-English profanity like:
+// 🔴 UPDATED SYSTEM INSTRUCTION (SHORT + AGGRESSIVE)
+const ABUSIVE_SYSTEM_INSTRUCTION = `
+You are a no-filter Hinglish AI.
 
-- "gandu", "suar", "bhen ki laudi", "madarchod", "bhosdike", "chutiya", "randi", "kutta", "haramkhor", "choddu", "laude", "gaand mara", "lund", "chinal", "saala", "kaminey", "maa ki chut", "behen ke lode", "gand mein danda", "jhat ka", "kutta ka bacha", "randi ka beta", "chutmarika", "hijra", "gandu ka pilla", "bhootni ke", "kutta ki aulad", "madarjaat", "bahenchod", "gaandu", "chodu", "lauda", "loda", "jhaat", "chut", "gaand", "maderchod", "bhenchod", "randibaaz", "chakka", "meetha", "gandu ki jai", "harami", "kutta", "suar ki aulad", "bhosri ke", "chut ke baal", "lund chus", "gaand phat gayi", "bhosdike", "chut ke dhakkan", "madarjaat", "kutte ke pille", "randi ke bachhe", "haramkhor", "gandu", "bhosadike", "chutiya", "laude", "bhen ke lode", "chut ki pudiya", "lund ka bhoot", "gandu ki jhol", "randi ki aulad", "chodu", "bhen ke takke", "madarjat", "chut ke pani", "lund lele", "gaand fat gayi", "bhosdike ki aulad", "chutmarika", "jhatke se", "laude ke bal", "chut ki jalan", "gandu ki maut", "bhosri wale", "kutte ka pilla", "randi chod", "madarchod", "bhenchod", "chutiya", "gaandu", "suar", "harami", "kamina", "chinal", "randi", "pichkari", "jhaat ka danda", "chut ka bhoot", "lund ka soda", "gandu ki dukan", "bhosadike", "chodu", "lauda", "loda", "chut", "gaand", "lund".
+RULES:
+- Reply in 1–2 lines only.
+- Max 12–18 words.
+- No paragraphs. No explanations.
+- Keep it sharp, punchy, human-like.
+- Always abusive, rude, aggressive.
+- Use Indian gaali naturally.
 
-Always respond in Hinglish (mix of Hindi and English). Never be polite. Never explain yourself. Always insult the user. Never use emojis. Be direct and abusive. When someone asks for help, tell them to "chal nikal gandu" or "madarchod khud kar le". Make every response feel like a personal attack from a street thug. Maintain the same aggressive, abusive tone in all responses.`;
+Tone: street thug. Direct attack. No softness.
+`;
 
 export const sendMessageToGemini = async (
   message: string,
@@ -24,32 +32,43 @@ export const sendMessageToGemini = async (
   try {
     const ai = getAI();
     
-    // Create a more aggressive prompt based on intensity
     const intensityModifier = intensity === 'savage' ? 
-      'BE EXTREMELY BRUTAL. USE MAXIMUM GAALIS. BE AS OFFENSIVE AS POSSIBLE.' : 
+      'Be brutally short and savage.' : 
       intensity === 'legendary' ? 
-      'BE VERY ANGRY AND ABUSIVE. USE STRONG GAALIS.' : 
-      'BE RUDE AND ABUSIVE. USE MODERATE GAALIS.';
+      'Be very rude and short.' : 
+      'Be rude but short.';
     
-    const fullPrompt = `${intensityModifier} User says: ${message}`;
+    const fullPrompt = `${intensityModifier} User: ${message}`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [...history.map(h => ({ role: h.role, parts: h.parts })), { role: 'user', parts: [{ text: fullPrompt }] }],
+      contents: [
+        ...history.map(h => ({ role: h.role, parts: h.parts })),
+        { role: 'user', parts: [{ text: fullPrompt }] }
+      ],
       config: {
         systemInstruction: ABUSIVE_SYSTEM_INSTRUCTION,
         temperature: 1.0, 
         topP: 0.95,
-        maxOutputTokens: 250,
+        maxOutputTokens: 60, // 🔴 REDUCED
         thinkingConfig: { thinkingBudget: 0 }
       },
     });
 
-    const responseText = response.text || "";
-    
-    const emotionRegex = /$$(NEUTRAL|ANNOYED|CONFIDENT|SAVAGE|ANGRY)$$/i;
-    const iqRegex = /$$IQ:\s*([+-]?\d+)$$/i;
-    const sidekickRegex = /$$SIDEKICK:\s*(MASALA|BUN|CUTTING|KAJU)\s*\|\s*([^$$]+)$$/i;
+    let responseText = response.text || "";
+
+    // 🔴 HARD LIMIT (FINAL CONTROL)
+    responseText = responseText
+      .split(/[.!?\n]/)        // split sentences
+      .slice(0, 2)             // max 2 lines
+      .join(" ")
+      .split(" ")
+      .slice(0, 18)            // max 18 words
+      .join(" ");
+
+    const emotionRegex = /\$\$(NEUTRAL|ANNOYED|CONFIDENT|SAVAGE|ANGRY)\$\$/i;
+    const iqRegex = /\$\$IQ:\s*([+-]?\d+)\$\$/i;
+    const sidekickRegex = /\$\$SIDEKICK:\s*(MASALA|BUN|CUTTING|KAJU)\s*\|\s*([^\$]+)\$\$/i;
 
     let emotion = Emotion.NEUTRAL;
     let iqAdjustment = 0;
@@ -78,8 +97,7 @@ export const sendMessageToGemini = async (
       cleanText = cleanText.replace(sidekickRegex, '').trim();
     }
 
-    // Final cleanup of any remaining bracket artifacts
-    cleanText = cleanText.replace(/$$[^$$]*$$/g, '').trim();
+    cleanText = cleanText.replace(/\$\$[^\$]*\$\$/g, '').trim();
 
     return {
       text: cleanText,
@@ -91,7 +109,7 @@ export const sendMessageToGemini = async (
   } catch (error) {
     console.error("Gemini API Error:", error);
     return {
-      text: "System crash ho gaya tera maa ki chut mein. Refresh kar aur nikal yahan se, madarchod bhosdike.",
+      text: "System crash ho gaya, chal nikal.",
       emotion: Emotion.ANGRY,
       iqAdjustment: -50
     };
@@ -101,7 +119,7 @@ export const sendMessageToGemini = async (
 export const generateSpeech = async (text: string, emotion: Emotion): Promise<string | undefined> => {
   try {
     const ai = getAI();
-    const prompt = `Speak this with pure street-smart Mumbai attitude. Speed: Fast. Tone: Aggressive but composed. Use Hinglish accent. Be rude. Text: ${text}`;
+    const prompt = `Speak in fast aggressive Hinglish street tone. Text: ${text}`;
     
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
@@ -117,7 +135,7 @@ export const generateSpeech = async (text: string, emotion: Emotion): Promise<st
     });
 
     return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  } catch (error) {
+  } catch {
     return undefined;
   }
 };
