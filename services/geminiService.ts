@@ -27,7 +27,7 @@ export const sendMessageToGemini = async (
     // Create a more aggressive prompt based on intensity
     const intensityModifier = intensity === 'savage' ? 
       'BE EXTREMELY BRUTAL. USE MAXIMUM GAALIS. BE AS OFFENSIVE AS POSSIBLE.' : 
-      intensity === 'angry' ? 
+      intensity === 'legendary' ? 
       'BE VERY ANGRY AND ABUSIVE. USE STRONG GAALIS.' : 
       'BE RUDE AND ABUSIVE. USE MODERATE GAALIS.';
     
