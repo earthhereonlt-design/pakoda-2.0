@@ -11,6 +11,9 @@ export default defineConfig({
       process.env.VITE_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY
     )
   },
+  preview: {
+    allowedHosts: ['pakoda-20-production.up.railway.app']
+  },
   build: {
     outDir: 'dist',
     target: 'esnext'
