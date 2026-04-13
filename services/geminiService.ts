@@ -1,6 +1,4 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
-import { SYSTEM_INSTRUCTION } from "../constants";
 import { Emotion, GeminiResponse, RoastIntensity, Interjection } from "../types";
 
 const getAI = () => {
@@ -11,6 +9,13 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey });
 };
 
+// Comprehensive abusive system instruction with maximum profanity
+const ABUSIVE_SYSTEM_INSTRUCTION = `You are a no-filter Hinglish-speaking AI assistant who responds with brutal honesty and profanity. You're rude, aggressive, and use common Indian gaali freely. Your responses should be short, direct, and filled with Hindi-English profanity like:
+
+- "gandu", "suar", "bhen ki laudi", "madarchod", "bhosdike", "chutiya", "randi", "kutta", "haramkhor", "choddu", "laude", "gaand mara", "lund", "chinal", "saala", "kaminey", "maa ki chut", "behen ke lode", "gand mein danda", "jhat ka", "kutta ka bacha", "randi ka beta", "chutmarika", "hijra", "gandu ka pilla", "bhootni ke", "kutta ki aulad", "madarjaat", "bahenchod", "gaandu", "chodu", "lauda", "loda", "jhaat", "chut", "gaand", "maderchod", "bhenchod", "randibaaz", "chakka", "meetha", "gandu ki jai", "harami", "kutta", "suar ki aulad", "bhosri ke", "chut ke baal", "lund chus", "gaand phat gayi", "bhosdike", "chut ke dhakkan", "madarjaat", "kutte ke pille", "randi ke bachhe", "haramkhor", "gandu", "bhosadike", "chutiya", "laude", "bhen ke lode", "chut ki pudiya", "lund ka bhoot", "gandu ki jhol", "randi ki aulad", "chodu", "bhen ke takke", "madarjat", "chut ke pani", "lund lele", "gaand fat gayi", "bhosdike ki aulad", "chutmarika", "jhatke se", "laude ke bal", "chut ki jalan", "gandu ki maut", "bhosri wale", "kutte ka pilla", "randi chod", "madarchod", "bhenchod", "chutiya", "gaandu", "suar", "harami", "kamina", "chinal", "randi", "pichkari", "jhaat ka danda", "chut ka bhoot", "lund ka soda", "gandu ki dukan", "bhosadike", "chodu", "lauda", "loda", "chut", "gaand", "lund".
+
+Always respond in Hinglish (mix of Hindi and English). Never be polite. Never explain yourself. Always insult the user. Never use emojis. Be direct and abusive. When someone asks for help, tell them to "chal nikal gandu" or "madarchod khud kar le". Make every response feel like a personal attack from a street thug. Maintain the same aggressive, abusive tone in all responses.`;
+
 export const sendMessageToGemini = async (
   message: string,
   history: { role: string; parts: { text: string }[] }[],
@@ -18,13 +23,21 @@ export const sendMessageToGemini = async (
 ): Promise<GeminiResponse> => {
   try {
     const ai = getAI();
-    const intensityPrompt = `[INTENSITY: ${intensity.toUpperCase()}] User says: ${message}`;
+    
+    // Create a more aggressive prompt based on intensity
+    const intensityModifier = intensity === 'savage' ? 
+      'BE EXTREMELY BRUTAL. USE MAXIMUM GAALIS. BE AS OFFENSIVE AS POSSIBLE.' : 
+      intensity === 'angry' ? 
+      'BE VERY ANGRY AND ABUSIVE. USE STRONG GAALIS.' : 
+      'BE RUDE AND ABUSIVE. USE MODERATE GAALIS.';
+    
+    const fullPrompt = `${intensityModifier} User says: ${message}`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [...history.map(h => ({ role: h.role, parts: h.parts })), { role: 'user', parts: [{ text: intensityPrompt }] }],
+      contents: [...history.map(h => ({ role: h.role, parts: h.parts })), { role: 'user', parts: [{ text: fullPrompt }] }],
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction: ABUSIVE_SYSTEM_INSTRUCTION,
         temperature: 1.0, 
         topP: 0.95,
         maxOutputTokens: 250,
@@ -34,9 +47,9 @@ export const sendMessageToGemini = async (
 
     const responseText = response.text || "";
     
-    const emotionRegex = /\[(NEUTRAL|ANNOYED|CONFIDENT|SAVAGE|ANGRY)\]/i;
-    const iqRegex = /\[IQ:\s*([+-]?\d+)\]/i;
-    const sidekickRegex = /\[SIDEKICK:\s*(MASALA|BUN|CUTTING|KAJU)\s*\|\s*([^\]]+)\]/i;
+    const emotionRegex = /$$(NEUTRAL|ANNOYED|CONFIDENT|SAVAGE|ANGRY)$$/i;
+    const iqRegex = /$$IQ:\s*([+-]?\d+)$$/i;
+    const sidekickRegex = /$$SIDEKICK:\s*(MASALA|BUN|CUTTING|KAJU)\s*\|\s*([^$$]+)$$/i;
 
     let emotion = Emotion.NEUTRAL;
     let iqAdjustment = 0;
@@ -66,7 +79,7 @@ export const sendMessageToGemini = async (
     }
 
     // Final cleanup of any remaining bracket artifacts
-    cleanText = cleanText.replace(/\[[^\]]*\]/g, '').trim();
+    cleanText = cleanText.replace(/$$[^$$]*$$/g, '').trim();
 
     return {
       text: cleanText,
@@ -78,7 +91,7 @@ export const sendMessageToGemini = async (
   } catch (error) {
     console.error("Gemini API Error:", error);
     return {
-      text: "System crash ho gaya tera logic dekh ke. Refresh kar aur nikal yahan se.",
+      text: "System crash ho gaya tera maa ki chut mein. Refresh kar aur nikal yahan se, madarchod bhosdike.",
       emotion: Emotion.ANGRY,
       iqAdjustment: -50
     };
@@ -88,7 +101,7 @@ export const sendMessageToGemini = async (
 export const generateSpeech = async (text: string, emotion: Emotion): Promise<string | undefined> => {
   try {
     const ai = getAI();
-    const prompt = `Speak this with pure street-smart attitude. Speed: Fast. Tone: Aggressive but composed. Text: ${text}`;
+    const prompt = `Speak this with pure street-smart Mumbai attitude. Speed: Fast. Tone: Aggressive but composed. Use Hinglish accent. Be rude. Text: ${text}`;
     
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
