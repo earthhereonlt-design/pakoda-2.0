@@ -1,12 +1,7 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
 # Run and deploy your AI Studio app
 
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/1E2kwh9vrAiQIVB0fBy98Ya5VNb1bfJTO
+This contains everything you need to run your app locally or on cloud.
 
 ## Run Locally
 
@@ -29,5 +24,3 @@ View your app in AI Studio: https://ai.studio/apps/drive/1E2kwh9vrAiQIVB0fBy98Ya
 4. Set the start command to:
    `npm start`
 5. Railway should detect the app as a Node/Vite service and deploy the static build.
-
-> Note: This app currently calls Gemini from the frontend, so the API key is included in the built JavaScript bundle. For production security, consider moving Gemini calls to a backend server or function.
